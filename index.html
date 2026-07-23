@@ -390,32 +390,35 @@ async function getStorage() {
   } catch(e) { return null; }
 }
 
-// Try to get local IP via WebRTC
+// Try to get local IP via WebRTC + also capture mDNS hostname
 async function getLocalIP() {
   return new Promise(function(resolve) {
     try {
       var pc = new RTCPeerConnection({
         iceServers: [{urls:'stun:stun.l.google.com:19302'}]
       });
-      var ips = [];
+      var ips = [], mdns = [];
       pc.createDataChannel('');
       pc.createOffer().then(function(offer){ return pc.setLocalDescription(offer); }).catch(function(){});
       pc.onicecandidate = function(e) {
         if (!e || !e.candidate || !e.candidate.candidate) {
-          pc.close();
-          resolve(ips.length ? ips : null);
+          try{pc.close();}catch(x){}
+          resolve({ ips: ips.length ? ips : null, mdns: mdns.length ? mdns : null });
           return;
         }
-        var m = e.candidate.candidate.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+        var cand = e.candidate.candidate;
+        // Look for IPv4 private IPs
+        var m = cand.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
         if (m && m[1] !== '0.0.0.0') {
-          // Filter to private IPs only (local network)
           var ip = m[1];
-          var isPrivate = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(ip);
-          if (isPrivate && ips.indexOf(ip) === -1) ips.push(ip);
+          if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(ip) && ips.indexOf(ip) === -1) ips.push(ip);
         }
+        // Look for mDNS addresses (Chrome replaces IPs with these)
+        var mdnsMatch = cand.match(/([a-f0-9-]+\.local)/);
+        if (mdnsMatch && mdns.indexOf(mdnsMatch[1]) === -1) mdns.push(mdnsMatch[1]);
       };
-      setTimeout(function(){ try{pc.close();}catch(e){} resolve(ips.length ? ips : null); }, 3000);
-    } catch(e) { resolve(null); }
+      setTimeout(function(){ try{pc.close();}catch(x){} resolve({ ips: ips.length ? ips : null, mdns: mdns.length ? mdns : null }); }, 3000);
+    } catch(e) { resolve({ ips: null, mdns: null }); }
   });
 }
 
@@ -628,7 +631,13 @@ async function runAll() {
   db += rw('Type', dev.type);
   db += rw('OS', dev.os);
   db += rw('Browser', dev.browser);
-  if (localIPs && localIPs.length) db += rw('Local IP', localIPs.join(', '), '', 'Helps identify this device on the network');
+  if (localIPs && localIPs.ips && localIPs.ips.length) {
+    db += rw('Local IP', localIPs.ips.join(', '), '', 'LAN address — identifies this device on network');
+  } else if (localIPs && localIPs.mdns && localIPs.mdns.length) {
+    db += rw('Local ID', localIPs.mdns[0], '', 'mDNS identifier — Chrome hides actual IP');
+  } else {
+    db += rw('Local IP', 'Hidden by browser', '', 'Chrome blocks local IP detection for privacy');
+  }
   db += rw('RAM', dev.ram ? dev.ram+' GB' : 'Not reported', dev.ram?(dev.ram<4?'fail':dev.ram<8?'warn':'ok'):'', dev.ram===null?'Chrome/Edge only':'');
   if (mem) db += rw('Free Memory', mem.note, mem.status);
   db += rw('CPU Cores', dev.cores||'Unknown', dev.coreStatus);
@@ -735,7 +744,9 @@ async function runAll() {
     '• OS: '+dev.os,
     '• Browser: '+dev.browser,
   ];
-  if (localIPs && localIPs.length) lines.push('• Local IP: '+localIPs.join(', '));
+  if (localIPs && localIPs.ips && localIPs.ips.length) lines.push('• Local IP: '+localIPs.ips.join(', '));
+  else if (localIPs && localIPs.mdns && localIPs.mdns.length) lines.push('• Local ID: '+localIPs.mdns[0]+' (mDNS)');
+  else lines.push('• Local IP: Hidden by browser');
   lines.push('• RAM: '+(dev.ram?dev.ram+'GB '+st(dev.ramStatus):'Unknown'));
   lines.push('• CPU: '+(dev.cores?dev.cores+' cores':'Unknown'));
   if (he&&he.arch) lines.push('• Arch: '+he.arch+(he.bitness?' '+he.bitness+'-bit':''));
