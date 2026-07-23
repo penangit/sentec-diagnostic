@@ -1,0 +1,198 @@
+@echo off
+setlocal
+chcp 65001 >nul 2>&1
+title Sentec PMS - System Diagnostics
+set "PS=%TEMP%\sentec-diag.ps1"
+set "B64=%TEMP%\sentec-diag.b64"
+
+cls
+echo.
+echo   ======================================================
+echo     SENTEC PMS - LOCAL SYSTEM DIAGNOSTICS
+echo     Please wait, this takes about 2 minutes...
+echo   ======================================================
+echo.
+
+:: Write base64 encoded PowerShell script
+if exist "%B64%" del "%B64%" >nul 2>&1
+echo JEVycm9yQWN0aW9uUHJlZmVyZW5jZSA9ICdTaWxlbnRseUNvbnRpbnVlJwokUiA9ICIkZW52OlRF> "%B64%"
+echo TVBcc2VudGVjLWRpYWcudHh0IgokVyA9ICIkZW52OlRFTVBcc2VudGVjLWRpYWctd2EudHh0Igok>> "%B64%"
+echo bmwgPSAiYG4iCiRmdWxsID0gQCgpCiR3YSA9IEAoKQoKV3JpdGUtSG9zdCAnICBbMS8xMF0gQ29t>> "%B64%"
+echo cHV0ZXIgaWRlbnRpdHkuLi4nCiRvcyA9IEdldC1DaW1JbnN0YW5jZSBXaW4zMl9PcGVyYXRpbmdT>> "%B64%"
+echo eXN0ZW0KJGNwdSA9IEdldC1DaW1JbnN0YW5jZSBXaW4zMl9Qcm9jZXNzb3IKJGNzID0gR2V0LUNp>> "%B64%"
+echo bUluc3RhbmNlIFdpbjMyX0NvbXB1dGVyU3lzdGVtCiRib290ID0gJG9zLkxhc3RCb290VXBUaW1l>> "%B64%"
+echo CiR1cCA9IChHZXQtRGF0ZSkgLSAkYm9vdAokdXBTdHIgPSAiJCgkdXAuRGF5cylkICQoJHVwLkhv>> "%B64%"
+echo dXJzKWggJCgkdXAuTWludXRlcyltIgoKJGZ1bGwgKz0gJz09PT09PT09PT09PT09PT09PT09PT09>> "%B64%"
+echo PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0nCiRmdWxsICs9ICcgU0VOVEVDIFBNUyAtIExP>> "%B64%"
+echo Q0FMIFNZU1RFTSBESUFHTk9TVElDUycKJGZ1bGwgKz0gIiBHZW5lcmF0ZWQ6ICQoR2V0LURhdGUg>> "%B64%"
+echo LUZvcm1hdCAnZGQvTU0veXl5eSBISDptbTpzcycpIgokZnVsbCArPSAnPT09PT09PT09PT09PT09>> "%B64%"
+echo PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PScKJGZ1bGwgKz0gJycKJGZ1bGwg>> "%B64%"
+echo Kz0gIkhvc3RuYW1lOiAkZW52OkNPTVBVVEVSTkFNRSIKJGZ1bGwgKz0gIlVzZXJuYW1lOiAkZW52>> "%B64%"
+echo OlVTRVJOQU1FIgokZnVsbCArPSAiRG9tYWluOiAkZW52OlVTRVJET01BSU4iCiRmdWxsICs9ICJP>> "%B64%"
+echo UzogJCgkb3MuQ2FwdGlvbikgQnVpbGQgJCgkb3MuQnVpbGROdW1iZXIpIgokZnVsbCArPSAiQXJj>> "%B64%"
+echo aDogJCgkb3MuT1NBcmNoaXRlY3R1cmUpIgokZnVsbCArPSAiTW9kZWw6ICQoJGNzLk1hbnVmYWN0>> "%B64%"
+echo dXJlcikgJCgkY3MuTW9kZWwpIgokZnVsbCArPSAiVXB0aW1lOiAkdXBTdHIiCiRmdWxsICs9ICcn>> "%B64%"
+echo Cgokd2EgKz0gIipTRU5URUMgTE9DQUwgRElBR05PU1RJQ1MqIgokd2EgKz0gIiQoR2V0LURhdGUg>> "%B64%"
+echo LUZvcm1hdCAnZGQvTU0veXl5eSBISDptbScpIgokd2EgKz0gJycKJHdhICs9ICIqSURFTlRJVFkq>> "%B64%"
+echo Igokd2EgKz0gIi0gSG9zdG5hbWU6ICRlbnY6Q09NUFVURVJOQU1FIgokd2EgKz0gIi0gVXNlcjog>> "%B64%"
+echo JGVudjpVU0VSRE9NQUlOXCRlbnY6VVNFUk5BTUUiCiR3YSArPSAiLSBPUzogJCgkb3MuQ2FwdGlv>> "%B64%"
+echo bikiCiR3YSArPSAiLSBNb2RlbDogJCgkY3MuTW9kZWwpIgokd2EgKz0gIi0gVXB0aW1lOiAkdXBT>> "%B64%"
+echo dHIiCiR3YSArPSAnJwoKV3JpdGUtSG9zdCAnICBbMi8xMF0gQ1BVIGFuZCB0ZW1wZXJhdHVyZS4u>> "%B64%"
+echo LicKJGZ1bGwgKz0gIkNQVTogJCgkY3B1Lk5hbWUuVHJpbSgpKSIKJGZ1bGwgKz0gIkNvcmVzOiAk>> "%B64%"
+echo KCRjcHUuTnVtYmVyT2ZDb3JlcykgLyBUaHJlYWRzOiAkKCRjcHUuTnVtYmVyT2ZMb2dpY2FsUHJv>> "%B64%"
+echo Y2Vzc29ycykiCiRmdWxsICs9ICJNYXggQ2xvY2s6ICQoJGNwdS5NYXhDbG9ja1NwZWVkKSBNSHoi>> "%B64%"
+echo CiRmdWxsICs9ICJDUFUgTG9hZDogJCgkY3B1LkxvYWRQZXJjZW50YWdlKSUiCgokd2EgKz0gIipI>> "%B64%"
+echo QVJEV0FSRSoiCiR3YSArPSAiLSBDUFU6ICQoJGNwdS5OYW1lLlRyaW0oKSkiCiR3YSArPSAiLSBD>> "%B64%"
+echo b3Jlcy9UaHJlYWRzOiAkKCRjcHUuTnVtYmVyT2ZDb3JlcykvJCgkY3B1Lk51bWJlck9mTG9naWNh>> "%B64%"
+echo bFByb2Nlc3NvcnMpIEAgJCgkY3B1Lk1heENsb2NrU3BlZWQpTUh6Igokd2EgKz0gIi0gQ1BVIExv>> "%B64%"
+echo YWQ6ICQoJGNwdS5Mb2FkUGVyY2VudGFnZSklIgoKdHJ5IHsKICAgICR0eiA9IEdldC1DaW1JbnN0>> "%B64%"
+echo YW5jZSBNU0FjcGlfVGhlcm1hbFpvbmVUZW1wZXJhdHVyZSAtTmFtZXNwYWNlIHJvb3Qvd21pIC1F>> "%B64%"
+echo cnJvckFjdGlvbiBTdG9wIHwgU2VsZWN0LU9iamVjdCAtRmlyc3QgMQogICAgJHRjID0gW21hdGhd>> "%B64%"
+echo OjpSb3VuZCgoJHR6LkN1cnJlbnRUZW1wZXJhdHVyZSAvIDEwKSAtIDI3My4xNSwgMSkKICAgICRm>> "%B64%"
+echo bCA9IGlmICgkdGMgLWd0IDg1KSB7ICdDUklUSUNBTCcgfSBlbHNlaWYgKCR0YyAtZ3QgNzUpIHsg>> "%B64%"
+echo J0hPVCcgfSBlbHNlIHsgJ09LJyB9CiAgICAkdGkgPSBpZiAoJHRjIC1ndCA4NSkgeyAiW0NSSVRJ>> "%B64%"
+echo Q0FMXSIgfSBlbHNlaWYgKCR0YyAtZ3QgNzUpIHsgIltIT1RdIiB9IGVsc2UgeyAiW09LXSIgfQog>> "%B64%"
+echo ICAgJGZ1bGwgKz0gIkNQVSBUZW1wOiAke3RjfUMgWyRmbF0iCiAgICAkd2EgKz0gIi0gVGVtcDog>> "%B64%"
+echo JHt0Y31DICR0aSIKfSBjYXRjaCB7CiAgICAkZnVsbCArPSAnQ1BVIFRlbXA6IFJlcXVpcmVzIGFk>> "%B64%"
+echo bWluIChydW4gYXMgQWRtaW5pc3RyYXRvciknCiAgICAkd2EgKz0gIi0gVGVtcDogTi9BIChydW4g>> "%B64%"
+echo YXMgQWRtaW4pIgp9CiRmdWxsICs9ICcnCgpXcml0ZS1Ib3N0ICcgIFszLzEwXSBNZW1vcnkuLi4n>> "%B64%"
+echo CiR0R0IgPSBbbWF0aF06OlJvdW5kKCRvcy5Ub3RhbFZpc2libGVNZW1vcnlTaXplIC8gMU1CLCAx>> "%B64%"
+echo KQokZkdCID0gW21hdGhdOjpSb3VuZCgkb3MuRnJlZVBoeXNpY2FsTWVtb3J5IC8gMU1CLCAxKQok>> "%B64%"
+echo dVAgPSBbbWF0aF06OlJvdW5kKCgkdEdCIC0gJGZHQikgLyAkdEdCICogMTAwKQokZnVsbCArPSAi>> "%B64%"
+echo UkFNOiAke3RHQn1HQiB0b3RhbCwgJHtmR0J9R0IgZnJlZSAoJHt1UH0lIHVzZWQpIgokd2EgKz0g>> "%B64%"
+echo Ii0gUkFNOiAke3RHQn1HQiB0b3RhbCwgJHtmR0J9R0IgZnJlZSAoJHt1UH0lKSIKCkdldC1DaW1J>> "%B64%"
+echo bnN0YW5jZSBXaW4zMl9QaHlzaWNhbE1lbW9yeSB8IEZvckVhY2gtT2JqZWN0IHsKICAgICRnID0g>> "%B64%"
+echo W21hdGhdOjpSb3VuZCgkXy5DYXBhY2l0eSAvIDFHQikKICAgICR0ID0gc3dpdGNoICgkXy5TTUJJ>> "%B64%"
+echo T1NNZW1vcnlUeXBlKSB7IDIwIHsgJ0REUjMnIH0gMjQgeyAnRERSNCcgfSAyNiB7ICdERFI0JyB9>> "%B64%"
+echo IDM0IHsgJ0REUjUnIH0gZGVmYXVsdCB7ICdERFI/JyB9IH0KICAgICRmdWxsICs9ICIgICR7Z31H>> "%B64%"
+echo QiAkdCBAICQoJF8uU3BlZWQpTUh6ICgkKCRfLkRldmljZUxvY2F0b3IpKSIKICAgICR3YSArPSAi>> "%B64%"
+echo ICAgICR7Z31HQiAkdCBAICQoJF8uU3BlZWQpTUh6Igp9CiRmdWxsICs9ICcnCgpXcml0ZS1Ib3N0>> "%B64%"
+echo ICcgIFs0LzEwXSBTdG9yYWdlIGFuZCBHUFUuLi4nCkdldC1DaW1JbnN0YW5jZSBXaW4zMl9Mb2dp>> "%B64%"
+echo Y2FsRGlzayAtRmlsdGVyICdEcml2ZVR5cGU9MycgfCBGb3JFYWNoLU9iamVjdCB7CiAgICAkZiA9>> "%B64%"
+echo IFttYXRoXTo6Um91bmQoJF8uRnJlZVNwYWNlIC8gMUdCKTsgJHMgPSBbbWF0aF06OlJvdW5kKCRf>> "%B64%"
+echo LlNpemUgLyAxR0IpCiAgICAkcCA9IGlmICgkcyAtZ3QgMCkgeyBbbWF0aF06OlJvdW5kKCgkcyAt>> "%B64%"
+echo ICRmKSAvICRzICogMTAwKSB9IGVsc2UgeyAwIH0KICAgICRmdWxsICs9ICIkKCRfLkRldmljZUlE>> "%B64%"
+echo KSAke2Z9R0IgZnJlZSAvICR7c31HQiB0b3RhbCAoJHtwfSUgdXNlZCkiCiAgICAkd2EgKz0gIi0g>> "%B64%"
+echo RGlzayAkKCRfLkRldmljZUlEKSAke2Z9R0IgZnJlZSAvICR7c31HQiIKfQpHZXQtQ2ltSW5zdGFu>> "%B64%"
+echo Y2UgV2luMzJfRGlza0RyaXZlIHwgRm9yRWFjaC1PYmplY3QgewogICAgJGZ1bGwgKz0gIiAgRGlz>> "%B64%"
+echo azogJCgkXy5Nb2RlbCkgKCQoW21hdGhdOjpSb3VuZCgkXy5TaXplLzFHQikpR0IpIgp9CkdldC1D>> "%B64%"
+echo aW1JbnN0YW5jZSBXaW4zMl9WaWRlb0NvbnRyb2xsZXIgfCBGb3JFYWNoLU9iamVjdCB7CiAgICAk>> "%B64%"
+echo ZnVsbCArPSAiR1BVOiAkKCRfLk5hbWUpIChEcml2ZXI6ICQoJF8uRHJpdmVyVmVyc2lvbikpIgog>> "%B64%"
+echo ICAgJHdhICs9ICItIEdQVTogJCgkXy5OYW1lKSIKfQokZnVsbCArPSAnJwokd2EgKz0gJycKCldy>> "%B64%"
+echo aXRlLUhvc3QgJyAgWzUvMTBdIE5ldHdvcmsuLi4nCiR3YSArPSAiKk5FVFdPUksqIgpHZXQtTmV0>> "%B64%"
+echo QWRhcHRlciB8IFdoZXJlLU9iamVjdCBTdGF0dXMgLWVxIFVwIHwgRm9yRWFjaC1PYmplY3Qgewog>> "%B64%"
+echo ICAgJGZ1bGwgKz0gIkFkYXB0ZXI6ICQoJF8uTmFtZSkgKCQoJF8uSW50ZXJmYWNlRGVzY3JpcHRp>> "%B64%"
+echo b24pKSIKICAgICRmdWxsICs9ICIgIExpbmsgU3BlZWQ6ICQoJF8uTGlua1NwZWVkKSIKICAgICRm>> "%B64%"
+echo dWxsICs9ICIgIE1BQzogJCgkXy5NYWNBZGRyZXNzKSIKICAgICR3YSArPSAiLSAkKCRfLk5hbWUp>> "%B64%"
+echo ICgkKCRfLkxpbmtTcGVlZCkpIgogICAgJHdhICs9ICIgIE1BQzogJCgkXy5NYWNBZGRyZXNzKSIK>> "%B64%"
+echo ICAgICRpcCA9IEdldC1OZXRJUEFkZHJlc3MgLUludGVyZmFjZUluZGV4ICRfLmlmSW5kZXggLUFk>> "%B64%"
+echo ZHJlc3NGYW1pbHkgSVB2NCAtRXJyb3JBY3Rpb24gU2lsZW50bHlDb250aW51ZQogICAgaWYgKCRp>> "%B64%"
+echo cCkgewogICAgICAgICRmdWxsICs9ICIgIExvY2FsIElQOiAkKCRpcC5JUEFkZHJlc3MpLyQoJGlw>> "%B64%"
+echo LlByZWZpeExlbmd0aCkiCiAgICAgICAgJHdhICs9ICIgIElQOiAkKCRpcC5JUEFkZHJlc3MpLyQo>> "%B64%"
+echo JGlwLlByZWZpeExlbmd0aCkiCiAgICB9CiAgICAkZ3cgPSBHZXQtTmV0Um91dGUgLUludGVyZmFj>> "%B64%"
+echo ZUluZGV4ICRfLmlmSW5kZXggLURlc3RpbmF0aW9uUHJlZml4ICcwLjAuMC4wLzAnIC1FcnJvckFj>> "%B64%"
+echo dGlvbiBTaWxlbnRseUNvbnRpbnVlCiAgICBpZiAoJGd3KSB7CiAgICAgICAgJGZ1bGwgKz0gIiAg>> "%B64%"
+echo R2F0ZXdheTogJCgkZ3cuTmV4dEhvcCkiCiAgICAgICAgJHdhICs9ICIgIEdXOiAkKCRndy5OZXh0>> "%B64%"
+echo SG9wKSIKICAgIH0KfQokZG5zID0gR2V0LURuc0NsaWVudFNlcnZlckFkZHJlc3MgLUFkZHJlc3NG>> "%B64%"
+echo YW1pbHkgSVB2NCB8IFdoZXJlLU9iamVjdCBTZXJ2ZXJBZGRyZXNzZXMgfCBTZWxlY3QtT2JqZWN0>> "%B64%"
+echo IC1FeHBhbmRQcm9wZXJ0eSBTZXJ2ZXJBZGRyZXNzZXMgLVVuaXF1ZQokZnVsbCArPSAiRE5TOiAk>> "%B64%"
+echo KCRkbnMgLWpvaW4gJywgJykiCiR3YSArPSAiLSBETlM6ICQoJGRucyAtam9pbiAnLCAnKSIKJGZ1>> "%B64%"
+echo bGwgKz0gJycKJHdhICs9ICcnCgpXcml0ZS1Ib3N0ICcgIFs2LzEwXSBETlMgcmVzb2x1dGlvbi4u>> "%B64%"
+echo LicKZm9yZWFjaCAoJGggaW4gQCgnYXBzZTEucG1zLnNlbnRlYy5pbycsICdhcHNlMS5hcGkucG1z>> "%B64%"
+echo LnNlbnRlYy5pbycsICdnb29nbGUuY29tJykpIHsKICAgIHRyeSB7CiAgICAgICAgJHIgPSBSZXNv>> "%B64%"
+echo bHZlLURuc05hbWUgJGggLVR5cGUgQSAtRG5zT25seSAtRXJyb3JBY3Rpb24gU3RvcCB8IFNlbGVj>> "%B64%"
+echo dC1PYmplY3QgLUZpcnN0IDEKICAgICAgICAkZnVsbCArPSAiJGggLT4gJCgkci5JUEFkZHJlc3Mp>> "%B64%"
+echo IFtPS10iCiAgICB9IGNhdGNoIHsKICAgICAgICAkZnVsbCArPSAiJGggLT4gRkFJTEVEIgogICAg>> "%B64%"
+echo fQp9CiRmdWxsICs9ICcnCgpXcml0ZS1Ib3N0ICcgIFs3LzEwXSBQaW5nIHRlc3RzLi4uJwokd2Eg>> "%B64%"
+echo Kz0gIipQSU5HKiIKZm9yZWFjaCAoJGggaW4gQCgnZ29vZ2xlLmNvbScsICdjbG91ZGZsYXJlLmNv>> "%B64%"
+echo bScsICdhcHNlMS5wbXMuc2VudGVjLmlvJywgJ2Fwc2UxLmFwaS5wbXMuc2VudGVjLmlvJykpIHsK>> "%B64%"
+echo ICAgIFdyaXRlLUhvc3QgIiAgICBQaW5naW5nICRoLi4uIgogICAgJHAgPSBUZXN0LUNvbm5lY3Rp>> "%B64%"
+echo b24gLUNvbXB1dGVyTmFtZSAkaCAtQ291bnQgNSAtRXJyb3JBY3Rpb24gU2lsZW50bHlDb250aW51>> "%B64%"
+echo ZQogICAgaWYgKCRwKSB7CiAgICAgICAgJGF2ZyA9IFttYXRoXTo6Um91bmQoKCRwIHwgTWVhc3Vy>> "%B64%"
+echo ZS1PYmplY3QgLVByb3BlcnR5IExhdGVuY3kgLUF2ZXJhZ2UpLkF2ZXJhZ2UpCiAgICAgICAgJG1u>> "%B64%"
+echo ID0gKCRwIHwgTWVhc3VyZS1PYmplY3QgLVByb3BlcnR5IExhdGVuY3kgLU1pbmltdW0pLk1pbmlt>> "%B64%"
+echo dW0KICAgICAgICAkbXggPSAoJHAgfCBNZWFzdXJlLU9iamVjdCAtUHJvcGVydHkgTGF0ZW5jeSAt>> "%B64%"
+echo TWF4aW11bSkuTWF4aW11bQogICAgICAgICRmdWxsICs9ICIkaCBhdmc9JHthdmd9bXMgbWluPSR7>> "%B64%"
+echo bW59bXMgbWF4PSR7bXh9bXMgbG9zcz0wLzUiCiAgICAgICAgJHdhICs9ICItICR7aH06ICR7YXZn>> "%B64%"
+echo fW1zIFtPS10iCiAgICB9IGVsc2UgewogICAgICAgICRmdWxsICs9ICIkaCBGQUlMRUQgKDEwMCUg>> "%B64%"
+echo bG9zcykiCiAgICAgICAgJHdhICs9ICItICR7aH06IEZBSUxFRCBbWF0iCiAgICB9Cn0KJGZ1bGwg>> "%B64%"
+echo Kz0gJycKJHdhICs9ICcnCgpXcml0ZS1Ib3N0ICcgIFs4LzEwXSBUcmFjZXJvdXRlICh1cCB0byA2>> "%B64%"
+echo MHMpLi4uJwokZnVsbCArPSAnLS0tIFRSQUNFUk9VVEUgdG8gYXBzZTEucG1zLnNlbnRlYy5pbyAt>> "%B64%"
+echo LS0nCiR0cmFjZSA9ICYgdHJhY2VydCAtZCAtdyAyMDAwIC1oIDIwIGFwc2UxLnBtcy5zZW50ZWMu>> "%B64%"
+echo aW8gMj4kbnVsbAppZiAoJHRyYWNlKSB7ICRmdWxsICs9ICR0cmFjZSB9CiRmdWxsICs9ICcnCgpX>> "%B64%"
+echo cml0ZS1Ib3N0ICcgIFs5LzEwXSBCcm93c2Vycy4uLicKJHdhICs9ICIqQlJPV1NFUlMqIgokY2hy>> "%B64%"
+echo b21lUGF0aHMgPSBAKAogICAgIiRlbnY6UHJvZ3JhbUZpbGVzXEdvb2dsZVxDaHJvbWVcQXBwbGlj>> "%B64%"
+echo YXRpb25cY2hyb21lLmV4ZSIsCiAgICAiJHtlbnY6UHJvZ3JhbUZpbGVzKHg4Nil9XEdvb2dsZVxD>> "%B64%"
+echo aHJvbWVcQXBwbGljYXRpb25cY2hyb21lLmV4ZSIsCiAgICAiJGVudjpMb2NhbEFwcERhdGFcR29v>> "%B64%"
+echo Z2xlXENocm9tZVxBcHBsaWNhdGlvblxjaHJvbWUuZXhlIgopCmZvcmVhY2ggKCRwIGluICRjaHJv>> "%B64%"
+echo bWVQYXRocykgewogICAgaWYgKFRlc3QtUGF0aCAkcCkgewogICAgICAgICR2ID0gKEdldC1JdGVt>> "%B64%"
+echo ICRwKS5WZXJzaW9uSW5mby5Qcm9kdWN0VmVyc2lvbgogICAgICAgICRmdWxsICs9ICJDaHJvbWU6>> "%B64%"
+echo IHYkdiIKICAgICAgICAkd2EgKz0gIi0gQ2hyb21lOiB2JHYiCiAgICAgICAgYnJlYWsKICAgIH0K>> "%B64%"
+echo fQokZWRnZVBhdGhzID0gQCgKICAgICIke2VudjpQcm9ncmFtRmlsZXMoeDg2KX1cTWljcm9zb2Z0>> "%B64%"
+echo XEVkZ2VcQXBwbGljYXRpb25cbXNlZGdlLmV4ZSIsCiAgICAiJGVudjpQcm9ncmFtRmlsZXNcTWlj>> "%B64%"
+echo cm9zb2Z0XEVkZ2VcQXBwbGljYXRpb25cbXNlZGdlLmV4ZSIKKQpmb3JlYWNoICgkcCBpbiAkZWRn>> "%B64%"
+echo ZVBhdGhzKSB7CiAgICBpZiAoVGVzdC1QYXRoICRwKSB7CiAgICAgICAgJHYgPSAoR2V0LUl0ZW0g>> "%B64%"
+echo JHApLlZlcnNpb25JbmZvLlByb2R1Y3RWZXJzaW9uCiAgICAgICAgJGZ1bGwgKz0gIkVkZ2U6IHYk>> "%B64%"
+echo diIKICAgICAgICAkd2EgKz0gIi0gRWRnZTogdiR2IgogICAgICAgIGJyZWFrCiAgICB9Cn0KJGNw>> "%B64%"
+echo ID0gR2V0LVByb2Nlc3MgLU5hbWUgY2hyb21lIC1FcnJvckFjdGlvbiBTaWxlbnRseUNvbnRpbnVl>> "%B64%"
+echo CmlmICgkY3ApIHsKICAgICRjbSA9IFttYXRoXTo6Um91bmQoKCRjcCB8IE1lYXN1cmUtT2JqZWN0>> "%B64%"
+echo IFdvcmtpbmdTZXQ2NCAtU3VtKS5TdW0gLyAxTUIpCiAgICAkZnVsbCArPSAiQ2hyb21lOiAkKCRj>> "%B64%"
+echo cC5Db3VudCkgcHJvY2Vzc2VzLCAke2NtfU1CIgogICAgJHdhICs9ICItIENocm9tZTogJCgkY3Au>> "%B64%"
+echo Q291bnQpIHRhYnMsICR7Y219TUIiCn0KJGZ1bGwgKz0gJycKCldyaXRlLUhvc3QgJyAgWzEwLzEw>> "%B64%"
+echo XSBQcm9jZXNzZXMgYW5kIEFWLi4uJwokd2EgKz0gJycKJHdhICs9ICIqVE9QIDUgUFJPQ0VTU0VT>> "%B64%"
+echo KiIKJGkgPSAwCkdldC1Qcm9jZXNzIHwgU29ydC1PYmplY3QgV29ya2luZ1NldDY0IC1EZXNjZW5k>> "%B64%"
+echo aW5nIHwgU2VsZWN0LU9iamVjdCAtRmlyc3QgMTAgfCBGb3JFYWNoLU9iamVjdCB7CiAgICAkbWIg>> "%B64%"
+echo PSBbbWF0aF06OlJvdW5kKCRfLldvcmtpbmdTZXQ2NCAvIDFNQikKICAgICRmdWxsICs9ICIkKCRf>> "%B64%"
+echo LlByb2Nlc3NOYW1lKTogJHttYn1NQiIKICAgIGlmICgkaSAtbHQgNSkgeyAkd2EgKz0gIi0gJCgk>> "%B64%"
+echo Xy5Qcm9jZXNzTmFtZSk6ICR7bWJ9TUIiIH0KICAgICRpKysKfQokZnVsbCArPSAnJwokd2EgKz0g>> "%B64%"
+echo JycKJHdhICs9ICIqQVYqIgp0cnkgewogICAgR2V0LUNpbUluc3RhbmNlIC1OYW1lc3BhY2Ugcm9v>> "%B64%"
+echo dC9TZWN1cml0eUNlbnRlcjIgLUNsYXNzTmFtZSBBbnRpVmlydXNQcm9kdWN0IC1FcnJvckFjdGlv>> "%B64%"
+echo biBTdG9wIHwgRm9yRWFjaC1PYmplY3QgewogICAgICAgICRmdWxsICs9ICJBVjogJCgkXy5kaXNw>> "%B64%"
+echo bGF5TmFtZSkiCiAgICAgICAgJHdhICs9ICItICQoJF8uZGlzcGxheU5hbWUpIgogICAgfQp9IGNh>> "%B64%"
+echo dGNoIHsKICAgICR3YSArPSAiLSBOL0EiCn0KJHdhICs9ICcnCiR3YSArPSAiRnJvbTogKiRlbnY6>> "%B64%"
+echo Q09NUFVURVJOQU1FKiIKJGZ1bGwgKz0gJz09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09>> "%B64%"
+echo PT09PT09PT09PT09PT09PT09PT0nCiRmdWxsICs9ICIgRW5kIC0gJGVudjpDT01QVVRFUk5BTUUg>> "%B64%"
+echo LSAkKEdldC1EYXRlIC1Gb3JtYXQgJ2RkL01NL3l5eXkgSEg6bW06c3MnKSIKJGZ1bGwgKz0gJz09>> "%B64%"
+echo PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0nCgojIFNh>> "%B64%"
+echo dmUgZmlsZXMKJGZ1bGwgLWpvaW4gImBuIiB8IFNldC1Db250ZW50IC1QYXRoICRSIC1FbmNvZGlu>> "%B64%"
+echo ZyBVVEY4CiR3YSAtam9pbiAiYG4iIHwgU2V0LUNvbnRlbnQgLVBhdGggJFcgLUVuY29kaW5nIFVU>> "%B64%"
+echo RjgKJHdhIC1qb2luICJgbiIgfCBTZXQtQ2xpcGJvYXJkCgpXcml0ZS1Ib3N0ICcnCldyaXRlLUhv>> "%B64%"
+echo c3QgJyAgRG9uZSEgUmVwb3J0IGNvcGllZCB0byBjbGlwYm9hcmQuJwo=>> "%B64%"
+
+:: Use PowerShell to decode base64 and write PS1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[IO.File]::WriteAllText('%PS%', [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(([IO.File]::ReadAllText('%B64%') -replace '\s',''))))"
+del "%B64%" >nul 2>&1
+
+if not exist "%PS%" (
+    echo.
+    echo   ERROR: Failed to create PowerShell script.
+    echo   Press any key to close...
+    pause >nul
+    exit /b 1
+)
+
+:: Run the PowerShell script
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS%"
+
+:: Show results
+cls
+echo.
+echo   ======================================================
+echo     DIAGNOSTICS COMPLETE!
+echo   ======================================================
+echo.
+echo     WhatsApp report COPIED TO CLIPBOARD
+echo     Just paste it in your WhatsApp group!
+echo.
+echo     Full report: %%TEMP%%\sentec-diag.txt
+echo     WhatsApp ver: %%TEMP%%\sentec-diag-wa.txt
+echo.
+echo   ======================================================
+echo.
+echo   --- WhatsApp Report (on your clipboard) ---
+echo.
+type "%TEMP%\sentec-diag-wa.txt" 2>nul
+echo.
+echo   ======================================================
+echo   Press any key to close...
+pause >nul
