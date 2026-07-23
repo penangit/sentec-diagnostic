@@ -390,11 +390,13 @@ async function getStorage() {
   } catch(e) { return null; }
 }
 
-// Try to get local IP via WebRTC (helps identify the machine on the network)
+// Try to get local IP via WebRTC
 async function getLocalIP() {
   return new Promise(function(resolve) {
     try {
-      var pc = new RTCPeerConnection({iceServers:[]});
+      var pc = new RTCPeerConnection({
+        iceServers: [{urls:'stun:stun.l.google.com:19302'}]
+      });
       var ips = [];
       pc.createDataChannel('');
       pc.createOffer().then(function(offer){ return pc.setLocalDescription(offer); }).catch(function(){});
@@ -404,14 +406,15 @@ async function getLocalIP() {
           resolve(ips.length ? ips : null);
           return;
         }
-        var parts = e.candidate.candidate.split(' ');
-        var ip = parts[4];
-        if (ip && ip.match(/^(\d{1,3}\.){3}\d{1,3}$/) && ips.indexOf(ip) === -1 && ip !== '0.0.0.0') {
-          ips.push(ip);
+        var m = e.candidate.candidate.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+        if (m && m[1] !== '0.0.0.0') {
+          // Filter to private IPs only (local network)
+          var ip = m[1];
+          var isPrivate = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(ip);
+          if (isPrivate && ips.indexOf(ip) === -1) ips.push(ip);
         }
       };
-      // Timeout fallback
-      setTimeout(function(){ pc.close(); resolve(ips.length ? ips : null); }, 3000);
+      setTimeout(function(){ try{pc.close();}catch(e){} resolve(ips.length ? ips : null); }, 3000);
     } catch(e) { resolve(null); }
   });
 }
@@ -463,39 +466,67 @@ async function testLatency(url, label, n) {
 }
 
 async function testSpeed() {
-  try {
-    var s = performance.now(); var r = await fetch('https://www.cloudflare.com/cdn-cgi/trace?cb='+Date.now(),{cache:'no-store'});
-    var blob = await r.blob(); var el = (performance.now()-s)/1000;
-    var mbps = parseFloat(((blob.size*8)/el/1e6).toFixed(2));
-    var st = 'ok'; if (mbps < 1) st = 'fail'; else if (mbps < 5) st = 'warn';
-    return { mbps:mbps, status:st };
-  } catch(e) { return { mbps:null, status:'skip' }; }
+  // Download multiple files to get a more accurate reading
+  // Use Cloudflare's speed test endpoint which serves larger responses
+  var urls = [
+    'https://speed.cloudflare.com/__down?bytes=100000&cb=' + Date.now(),
+    'https://speed.cloudflare.com/__down?bytes=500000&cb=' + Date.now() + '1',
+    'https://speed.cloudflare.com/__down?bytes=1000000&cb=' + Date.now() + '2',
+  ];
+  var totalBytes = 0, totalTime = 0;
+  for (var i = 0; i < urls.length; i++) {
+    try {
+      var s = performance.now();
+      var r = await fetch(urls[i], { cache: 'no-store' });
+      var blob = await r.blob();
+      var elapsed = (performance.now() - s) / 1000;
+      totalBytes += blob.size;
+      totalTime += elapsed;
+    } catch(e) {
+      // If Cloudflare speed endpoint fails, try fallback
+      if (i === 0) {
+        try {
+          var s2 = performance.now();
+          var r2 = await fetch('https://www.cloudflare.com/cdn-cgi/trace?cb=' + Date.now(), { cache: 'no-store' });
+          var b2 = await r2.blob();
+          totalBytes += b2.size; totalTime += (performance.now() - s2) / 1000;
+        } catch(e2) {}
+      }
+    }
+  }
+  if (totalTime === 0 || totalBytes === 0) return { mbps: null, status: 'skip' };
+  var mbps = parseFloat(((totalBytes * 8) / totalTime / 1e6).toFixed(1));
+  var st = 'ok'; if (mbps < 2) st = 'fail'; else if (mbps < 10) st = 'warn';
+  return { mbps: mbps, status: st, bytes: totalBytes };
 }
 
 async function traceRoute() {
   var hops = [
-    { label:'Local Network (Router)', url:null, note:'Cannot test from browser' },
-    { label:'ISP Gateway', url:null, note:'Cannot test from browser' },
-    { label:'Cloudflare CDN', url:'https://www.cloudflare.com/cdn-cgi/trace', region:'Global' },
-    { label:'Google CDN', url:'https://www.google.com/generate_204', region:'Global' },
-    { label:'AWS ap-southeast-1 (PMS)', url:PMS_HEALTH, region:'Singapore' },
-    { label:'Sentec API Server', url:API_HEALTH, region:'Singapore' },
+    { label:'Cloudflare CDN', url:'https://www.cloudflare.com/cdn-cgi/trace', region:'Global Edge' },
+    { label:'Google CDN', url:'https://www.google.com/generate_204', region:'Global Edge' },
+    { label:'AWS ap-southeast-1', url:PMS_HEALTH, region:'Singapore' },
+    { label:'Sentec API', url:API_HEALTH, region:'Singapore' },
   ];
   var results = [];
   for (var i = 0; i < hops.length; i++) {
     var h = hops[i];
-    if (!h.url) { results.push({label:h.label,ms:null,note:h.note,status:'skip'}); continue; }
     var times = [];
-    for (var j = 0; j < 3; j++) {
+    for (var j = 0; j < 5; j++) {
       var t = h.url + (h.url.indexOf('?')>-1?'&':'?') + '_tr=' + Date.now()+'-'+j;
       var s = performance.now();
       try { await fetch(t,{mode:'no-cors',cache:'no-store'}); times.push(Math.round(performance.now()-s)); } catch(e) { times.push(null); }
-      await sleep(100);
+      await sleep(80);
     }
     var valid = times.filter(function(t){return t!==null});
-    if (!valid.length) { results.push({label:h.label,ms:null,note:'Unreachable',status:'fail',region:h.region}); }
-    else { var avg=Math.round(valid.reduce(function(a,b){return a+b},0)/valid.length); var st='ok'; if(avg>800)st='fail'; else if(avg>300)st='warn';
-      results.push({label:h.label,ms:avg,note:h.region,status:st}); }
+    if (!valid.length) { results.push({label:h.label,ms:null,pings:times,note:'Unreachable',status:'fail',region:h.region}); }
+    else {
+      var avg=Math.round(valid.reduce(function(a,b){return a+b},0)/valid.length);
+      var mn=Math.round(Math.min.apply(null,valid)), mx=Math.round(Math.max.apply(null,valid));
+      var loss=times.filter(function(t){return t===null}).length;
+      var st='ok'; if(avg>800)st='fail'; else if(avg>300)st='warn';
+      if(loss>1) st='warn'; if(loss>2) st='fail';
+      results.push({label:h.label,ms:avg,min:mn,max:mx,pings:times,loss:loss,note:h.region,status:st});
+    }
   }
   return results;
 }
@@ -625,7 +656,7 @@ async function runAll() {
   html += '</div>'; // close grid2
 
   // Internet card (full width)
-  var ns='ok'; if(n1.status==='fail'||n2.status==='fail')ns='fail'; else if(n1.status==='warn'||n2.status==='warn'||spd.status==='warn')ns='warn';
+  var ns='ok'; if(n1.status==='fail'||n2.status==='fail')ns='fail'; else if(n1.status==='warn'||n2.status==='warn')ns='warn';
   var nb='';
   nb += rw('IP', ipInfo.ip, '', '', true);
   if (ipInfo.isp) nb += rw('ISP', ipInfo.isp);
@@ -635,7 +666,8 @@ async function runAll() {
   if (dev.rtt) nb += rw('Browser RTT', dev.rtt+'ms', dev.rtt>300?'warn':'ok');
   nb += rw(n1.label, n1.avg!==null?n1.avg+'ms':'Failed', n1.status, n1.avg!==null?'jitter: '+n1.jitter+'ms':'');
   nb += rw(n2.label, n2.avg!==null?n2.avg+'ms':'Failed', n2.status, n2.avg!==null?'jitter: '+n2.jitter+'ms':'');
-  nb += rw('Download', spd.mbps!==null?'~'+spd.mbps+' Mbps':'Failed', spd.status, spd.mbps!==null&&spd.mbps<5?'Min 5 Mbps recommended':'');
+  nb += rw('Download', spd.mbps!==null?'~'+spd.mbps+' Mbps':'Failed', spd.status, spd.mbps!==null?(spd.bytes?Math.round(spd.bytes/1024)+'KB test file':''):'');
+  if (dev.downlink) nb += rw('Browser Est. Speed', dev.downlink+' Mbps', '', 'Reported by Network Info API');
   nb += rw('WebSocket', ws.note, ws.status);
   html += card('Internet & ISP', ns, nb);
 
@@ -654,16 +686,34 @@ async function runAll() {
   }
   html += card('PMS Server', ps, pb);
 
-  // Network trace
+  // Network trace — ping style
   var traceHtml = '<div class="trace-box">';
-  traceHtml += 'HOP  LATENCY   DESTINATION\n───  ────────  ─────────────────────────────\n';
+  traceHtml += '<span style="color:#e2e8f0">PING TEST — 5 packets per host</span>\n\n';
+  var traceSt = 'ok';
   for (var ti=0;ti<trace.length;ti++) {
-    var tr=trace[ti]; var num=String(ti+1).padStart(2,' ')+'.';
-    if (tr.ms!==null) { traceHtml+='<span class="hop-'+tr.status+'">'+num+'  '+(tr.ms+'ms').padStart(7,' ')+'   '+tr.label+'</span>'; if(tr.note) traceHtml+=' <span style="color:#64748b">('+tr.note+')</span>'; traceHtml+='\n'; }
-    else { traceHtml+='<span class="hop-'+(tr.status==='skip'?'warn':'fail')+'">'+num+'     *      '+tr.label+'</span>'; if(tr.note) traceHtml+=' <span style="color:#64748b">('+tr.note+')</span>'; traceHtml+='\n'; }
+    var tr=trace[ti];
+    traceHtml += '<span style="color:#e2e8f0">--- '+tr.label+' ('+tr.note+') ---</span>\n';
+    if (tr.pings) {
+      for (var pi=0;pi<tr.pings.length;pi++) {
+        if (tr.pings[pi] !== null) {
+          var pcls = tr.pings[pi]>300?'hop-warn':tr.pings[pi]>800?'hop-fail':'hop-ok';
+          traceHtml += '<span class="'+pcls+'">  ping '+(pi+1)+': '+tr.pings[pi]+'ms</span>\n';
+        } else {
+          traceHtml += '<span class="hop-fail">  ping '+(pi+1)+': * timeout</span>\n';
+        }
+      }
+    }
+    if (tr.ms !== null) {
+      var scls = 'hop-'+tr.status;
+      traceHtml += '<span class="'+scls+'">  → avg: '+tr.ms+'ms  min: '+tr.min+'ms  max: '+tr.max+'ms  loss: '+(tr.loss||0)+'/5</span>\n\n';
+    } else {
+      traceHtml += '<span class="hop-fail">  → UNREACHABLE (100% packet loss)</span>\n\n';
+    }
+    if (tr.status === 'fail') traceSt = 'fail';
+    else if (tr.status === 'warn' && traceSt !== 'fail') traceSt = 'warn';
   }
   traceHtml += '</div>';
-  html += card('Network Trace', 'ok', traceHtml);
+  html += card('Ping & Trace', traceSt, traceHtml);
 
   // AWS latency link
   html += '<a class="aws-link" href="https://awsspeedtest.com/latency" target="_blank" rel="noopener">🌏 Run detailed AWS region latency test → awsspeedtest.com</a>';
@@ -707,10 +757,17 @@ async function runAll() {
   lines.push('• Cloudflare: '+(n1.avg!==null?n1.avg+'ms '+st(n1.status)+' (jitter:'+n1.jitter+'ms)':'Failed ❌'));
   lines.push('• Google: '+(n2.avg!==null?n2.avg+'ms '+st(n2.status)+' (jitter:'+n2.jitter+'ms)':'Failed ❌'));
   lines.push('• Speed: '+(spd.mbps!==null?'~'+spd.mbps+' Mbps '+st(spd.status):'Failed'));
+  if (dev.downlink) lines.push('• Browser Est: '+dev.downlink+' Mbps');
   lines.push('• WebSocket: '+ws.note+' '+st(ws.status));
   lines.push('');
-  lines.push('🗺️ *NETWORK TRACE*');
-  for (var ti=0;ti<trace.length;ti++) { var tr=trace[ti]; lines.push('• '+tr.label+': '+(tr.ms!==null?tr.ms+'ms '+st(tr.status):(tr.note||'*'))); }
+  lines.push('🏓 *PING & TRACE (5 packets)*');
+  for (var ti=0;ti<trace.length;ti++) { var tr=trace[ti];
+    if (tr.ms!==null) {
+      var pingStr=tr.pings.map(function(p){return p!==null?p+'ms':'*'}).join(' / ');
+      lines.push('• '+tr.label+' ('+tr.note+'): avg='+tr.ms+'ms min='+tr.min+'ms max='+tr.max+'ms loss='+(tr.loss||0)+'/5 '+st(tr.status));
+      lines.push('  ['+pingStr+']');
+    } else { lines.push('• '+tr.label+': UNREACHABLE ❌'); }
+  }
   lines.push('');
   lines.push('☁️ *PMS SERVER*');
   lines.push('• Frontend: '+(pms.avg!==null?pms.avg+'ms '+st(pms.status):'Failed'));
