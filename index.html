@@ -157,12 +157,74 @@ body{font-family:var(--sans);background:var(--bg);color:var(--tx);line-height:1.
   <div class="tabs">
     <button class="tab on" onclick="switchTab('diag',this)">🔍 Diagnostics</button>
     <button class="tab" onclick="switchTab('clear',this)">🧹 Clear Cache</button>
+    <button class="tab" onclick="switchTab('script',this)">📥 Local Script</button>
   </div>
 
   <!-- ════ DIAGNOSTICS TAB ════ -->
   <div class="pane on" id="pane-diag">
     <button class="btn btn-blue" id="runBtn" onclick="runAll()">▶ Run Full Diagnostics</button>
     <div id="out"></div>
+  </div>
+
+  <!-- ════ LOCAL SCRIPT TAB ════ -->
+  <div class="pane" id="pane-script">
+    <div class="clr-box">
+      <h3>🖥️ Local System Diagnostics Script</h3>
+      <p>This script runs on the hotel PC and captures detailed system info that the browser cannot access. It collects everything needed for troubleshooting and copies a WhatsApp-ready report to clipboard.</p>
+
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin:10px 0;font-size:12px;color:#166534">
+        <strong>What it collects:</strong><br>
+        • Computer hostname, username, domain<br>
+        • OS version, system uptime, manufacturer/model<br>
+        • CPU model, cores, clock speed, current load, temperature*<br>
+        • RAM total/free, DDR type & speed per module<br>
+        • Disk space, SSD/HDD model<br>
+        • GPU model and driver version<br>
+        • Network adapter, link speed, local IP, gateway, DNS<br>
+        • DNS resolution test for PMS domains<br>
+        • Ping test (5 packets) to Google, Cloudflare, PMS, API<br>
+        • Traceroute to PMS server<br>
+        • Installed browser versions (Chrome, Edge, Firefox)<br>
+        • Chrome memory usage and tab count<br>
+        • Top 10 processes by RAM usage<br>
+        • Antivirus software detected<br>
+        <em>*Temperature requires running as Administrator</em>
+      </div>
+
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin:10px 0;font-size:12px;color:#1e40af">
+        <strong>What it does NOT do:</strong><br>
+        • Does not install anything<br>
+        • Does not modify system settings<br>
+        • Does not send data anywhere — report stays on your clipboard and in a local temp file<br>
+        • Does not require internet (except for ping/traceroute tests)<br>
+        • Source code is visible — right-click the file and "Edit" to inspect
+      </div>
+
+      <div style="margin:16px 0">
+        <p style="font-size:13px;font-weight:600;margin-bottom:8px">Download options:</p>
+
+        <a class="aws-link" style="margin-bottom:8px;display:block" href="https://raw.githubusercontent.com/penangit/sentec-diagnostic/main/sentec-diag.txt" download="sentec-diag.txt">
+          📄 Download as .txt (rename to .bat to run)
+        </a>
+        <p style="font-size:11px;color:var(--tx3);margin:-4px 0 12px 0">Use this if your browser blocks .bat downloads. After downloading, rename <strong>sentec-diag.txt</strong> → <strong>sentec-diag.bat</strong></p>
+
+        <a class="aws-link" style="margin-bottom:8px;display:block" href="https://raw.githubusercontent.com/penangit/sentec-diagnostic/main/sentec-diag.bat" download="sentec-diag.bat">
+          ⚡ Download as .bat (double-click to run)
+        </a>
+        <p style="font-size:11px;color:var(--tx3);margin:-4px 0 12px 0">Direct download — if Chrome blocks it, click the ↑ arrow in the download bar → "Keep"</p>
+      </div>
+
+      <div class="note-box" style="margin-top:6px">
+        <strong>How to run:</strong><br>
+        1. Download the file (use .txt version if .bat is blocked)<br>
+        2. If .txt: rename the file extension from <strong>.txt</strong> to <strong>.bat</strong><br>
+        3. Double-click <strong>sentec-diag.bat</strong> to run<br>
+        4. Wait about 2 minutes for all tests to complete<br>
+        5. When done, the WhatsApp report is on your clipboard — just paste in the group chat!<br>
+        <br>
+        💡 <strong>Tip:</strong> Right-click → "Run as Administrator" to also get CPU temperature readings.
+      </div>
+    </div>
   </div>
 
   <!-- ════ CLEAR CACHE TAB ════ -->
@@ -860,6 +922,8 @@ function copyWA() {
     setTimeout(function(){b.className='cpy';b.textContent='📋 Copy Report for WhatsApp'},3000);
   });
 }
+
+
 </script>
 </body>
 </html>
