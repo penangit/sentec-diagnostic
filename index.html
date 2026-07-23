@@ -631,12 +631,11 @@ async function runAll() {
   db += rw('Type', dev.type);
   db += rw('OS', dev.os);
   db += rw('Browser', dev.browser);
+  // Device fingerprint — more useful than mDNS UUID for identifying machines
+  var fp = [dev.os, dev.ram?dev.ram+'GB':'?', dev.cores?dev.cores+'c':'?', dev.scr].join(' / ');
+  db += rw('Device ID', fp, '', 'Fingerprint to identify this machine');
   if (localIPs && localIPs.ips && localIPs.ips.length) {
-    db += rw('Local IP', localIPs.ips.join(', '), '', 'LAN address — identifies this device on network');
-  } else if (localIPs && localIPs.mdns && localIPs.mdns.length) {
-    db += rw('Local ID', localIPs.mdns[0], '', 'mDNS identifier — Chrome hides actual IP');
-  } else {
-    db += rw('Local IP', 'Hidden by browser', '', 'Chrome blocks local IP detection for privacy');
+    db += rw('Local IP', localIPs.ips.join(', '), '', 'LAN address');
   }
   db += rw('RAM', dev.ram ? dev.ram+' GB' : 'Not reported', dev.ram?(dev.ram<4?'fail':dev.ram<8?'warn':'ok'):'', dev.ram===null?'Chrome/Edge only':'');
   if (mem) db += rw('Free Memory', mem.note, mem.status);
@@ -744,9 +743,9 @@ async function runAll() {
     '• OS: '+dev.os,
     '• Browser: '+dev.browser,
   ];
+  var fp = [dev.os, dev.ram?dev.ram+'GB':'?', dev.cores?dev.cores+'c':'?', dev.scr].join(' / ');
+  lines.push('• Device ID: '+fp);
   if (localIPs && localIPs.ips && localIPs.ips.length) lines.push('• Local IP: '+localIPs.ips.join(', '));
-  else if (localIPs && localIPs.mdns && localIPs.mdns.length) lines.push('• Local ID: '+localIPs.mdns[0]+' (mDNS)');
-  else lines.push('• Local IP: Hidden by browser');
   lines.push('• RAM: '+(dev.ram?dev.ram+'GB '+st(dev.ramStatus):'Unknown'));
   lines.push('• CPU: '+(dev.cores?dev.cores+' cores':'Unknown'));
   if (he&&he.arch) lines.push('• Arch: '+he.arch+(he.bitness?' '+he.bitness+'-bit':''));
