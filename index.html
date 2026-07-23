@@ -203,12 +203,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--tx);line-height:1.
       <div style="margin:16px 0">
         <p style="font-size:13px;font-weight:600;margin-bottom:8px">Download options:</p>
 
-        <a class="aws-link" style="margin-bottom:8px;display:block" href="https://raw.githubusercontent.com/penangit/sentec-diagnostic/main/sentec-diag.txt" download="sentec-diag.txt">
+        <a class="aws-link" style="margin-bottom:8px;display:block;cursor:pointer" onclick="dlFile('txt')">
           📄 Download as .txt (rename to .bat to run)
         </a>
         <p style="font-size:11px;color:var(--tx3);margin:-4px 0 12px 0">Use this if your browser blocks .bat downloads. After downloading, rename <strong>sentec-diag.txt</strong> → <strong>sentec-diag.bat</strong></p>
 
-        <a class="aws-link" style="margin-bottom:8px;display:block" href="https://raw.githubusercontent.com/penangit/sentec-diagnostic/main/sentec-diag.bat" download="sentec-diag.bat">
+        <a class="aws-link" style="margin-bottom:8px;display:block;cursor:pointer" onclick="dlFile('bat')">
           ⚡ Download as .bat (double-click to run)
         </a>
         <p style="font-size:11px;color:var(--tx3);margin:-4px 0 12px 0">Direct download — if Chrome blocks it, click the ↑ arrow in the download bar → "Keep"</p>
@@ -921,6 +921,24 @@ function copyWA() {
     b.className='cpy done'; b.textContent='✓ Copied — Paste in WhatsApp';
     setTimeout(function(){b.className='cpy';b.textContent='📋 Copy Report for WhatsApp'},3000);
   });
+}
+
+function dlFile(ext) {
+  var url = 'https://raw.githubusercontent.com/penangit/sentec-diagnostic/main/sentec-diag.' + ext;
+  fetch(url)
+    .then(function(r) { return r.blob(); })
+    .then(function(blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'sentec-diag.' + ext;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(function() {
+      window.open(url, '_blank');
+    });
 }
 
 
