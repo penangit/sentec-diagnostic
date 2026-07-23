@@ -17,9 +17,7 @@ function Measure-TcpLatency {
             $sw.Stop()
             $results += $sw.ElapsedMilliseconds
             $tcp.Close()
-        } catch {
-            # connection failed, skip
-        }
+        } catch {}
         if ($i -lt ($Count - 1)) { Start-Sleep -Milliseconds 200 }
     }
     if ($results.Count -gt 0) {
@@ -31,7 +29,7 @@ function Measure-TcpLatency {
     return @{ OK = $false }
 }
 
-Write-Host '  [1/11] Computer identity...'
+Write-Host '  [1/12] Computer identity...'
 $os = Get-CimInstance Win32_OperatingSystem
 $cpu = Get-CimInstance Win32_Processor
 $cs = Get-CimInstance Win32_ComputerSystem
@@ -64,7 +62,7 @@ $wa += "- Model: $($cs.Model)"
 $wa += "- Uptime: $upStr"
 $wa += ''
 
-Write-Host '  [2/11] CPU and temperature...'
+Write-Host '  [2/12] CPU and temperature...'
 $full += "CPU: $($cpu.Name.Trim())"
 $full += "Cores: $($cpu.NumberOfCores) / Threads: $($cpu.NumberOfLogicalProcessors)"
 $full += "Max Clock: $($cpu.MaxClockSpeed) MHz"
@@ -88,7 +86,7 @@ try {
 }
 $full += ''
 
-Write-Host '  [3/11] Memory...'
+Write-Host '  [3/12] Memory...'
 $tGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 1)
 $fGB = [math]::Round($os.FreePhysicalMemory / 1MB, 1)
 $uP = [math]::Round(($tGB - $fGB) / $tGB * 100)
@@ -103,7 +101,7 @@ Get-CimInstance Win32_PhysicalMemory | ForEach-Object {
 }
 $full += ''
 
-Write-Host '  [4/11] Storage and GPU...'
+Write-Host '  [4/12] Storage and GPU...'
 Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | ForEach-Object {
     $f = [math]::Round($_.FreeSpace / 1GB); $s = [math]::Round($_.Size / 1GB)
     $p = if ($s -gt 0) { [math]::Round(($s - $f) / $s * 100) } else { 0 }
@@ -120,7 +118,7 @@ Get-CimInstance Win32_VideoController | ForEach-Object {
 $full += ''
 $wa += ''
 
-Write-Host '  [5/11] Network...'
+Write-Host '  [5/12] Network...'
 $wa += "*NETWORK*"
 Get-NetAdapter | Where-Object Status -eq Up | ForEach-Object {
     $full += "Adapter: $($_.Name) ($($_.InterfaceDescription))"
@@ -145,7 +143,100 @@ $wa += "- DNS: $($dns -join ', ')"
 $full += ''
 $wa += ''
 
-Write-Host '  [6/11] DNS resolution...'
+Write-Host '  [6/12] ISP detection...'
+$full += '--- ISP / PUBLIC IP ---'
+$wa += "*ISP*"
+$ispName = ''; $ispOrg = ''; $ispAs = ''; $ispCity = ''; $ispCountry = ''; $pubIp = ''
+
+# Known SEA ISP DNS servers for fallback detection
+$knownIspDns = @{
+    # Indonesia
+    '202.134.0.155' = 'Telkom (ID)';  '202.134.1.10'  = 'Telkom (ID)'
+    '202.134.0.61'  = 'Telkom (ID)';  '203.130.196.5' = 'Telkom (ID)'
+    '202.155.0.10'  = 'Indosat (ID)'; '202.155.0.15'  = 'Indosat (ID)'
+    '202.152.254.245'='Indosat (ID)'; '202.155.46.66' = 'Indosat (ID)'
+    '203.142.82.222' = 'Biznet (ID)'; '203.142.83.222' = 'Biznet (ID)'
+    '112.215.36.150' = 'XL (ID)';     '112.215.36.154' = 'XL (ID)'
+    '203.153.132.1'  = 'LinkNet/FirstMedia (ID)'
+    '103.86.96.2'    = 'MyRepublic (ID)'; '103.86.96.3' = 'MyRepublic (ID)'
+    # Malaysia
+    '1.9.1.1'        = 'TM/Unifi (MY)'; '210.187.130.63' = 'TM/Unifi (MY)'
+    '210.187.130.60' = 'TM/Unifi (MY)'
+    '202.188.0.133'  = 'Maxis (MY)';   '202.188.1.5'   = 'Maxis (MY)'
+    '211.25.206.147' = 'TIME (MY)';     '124.217.233.1' = 'TIME (MY)'
+    '218.208.28.34'  = 'Digi (MY)';    '218.208.28.18' = 'Digi (MY)'
+}
+
+# Try primary API: ip-api.com (no key needed, JSON)
+try {
+    $geo = Invoke-RestMethod -Uri 'http://ip-api.com/json/?fields=query,isp,org,as,city,regionName,country,countryCode' -TimeoutSec 5 -ErrorAction Stop
+    $pubIp      = $geo.query
+    $ispName    = $geo.isp
+    $ispOrg     = $geo.org
+    $ispAs      = $geo.as
+    $ispCity    = $geo.city
+    $ispCountry = "$($geo.country) ($($geo.countryCode))"
+
+    $full += "Public IP: $pubIp"
+    $full += "ISP: $ispName"
+    $full += "Org: $ispOrg"
+    $full += "ASN: $ispAs"
+    $full += "Location: $ispCity, $ispCountry"
+
+    $wa += "- IP: $pubIp"
+    $wa += "- ISP: *$ispName*"
+    if ($ispCity) { $wa += "- Location: $ispCity, $($geo.countryCode)" }
+} catch {
+    # Fallback: try ipinfo.io
+    try {
+        $geo2 = Invoke-RestMethod -Uri 'https://ipinfo.io/json' -TimeoutSec 5 -ErrorAction Stop
+        $pubIp   = $geo2.ip
+        $ispName = $geo2.org
+        $ispCity = $geo2.city
+        $ispCountry = $geo2.country
+
+        $full += "Public IP: $pubIp"
+        $full += "ISP: $ispName"
+        $full += "Location: $ispCity, $ispCountry"
+
+        $wa += "- IP: $pubIp"
+        $wa += "- ISP: *$ispName*"
+        if ($ispCity) { $wa += "- Location: $ispCity, $ispCountry" }
+    } catch {
+        # Last fallback: detect from DNS servers
+        $detectedIsp = ''
+        foreach ($d in $dns) {
+            if ($knownIspDns.ContainsKey($d)) {
+                $detectedIsp = $knownIspDns[$d]
+                break
+            }
+        }
+        if ($detectedIsp) {
+            $full += "ISP (from DNS): $detectedIsp"
+            $wa += "- ISP (DNS): *$detectedIsp*"
+            $ispName = $detectedIsp
+        } else {
+            $full += "ISP: Could not detect (API blocked)"
+            $wa += "- ISP: N/A (blocked)"
+        }
+    }
+}
+
+# DNS-based ISP hint (always show if matched, even if API worked)
+foreach ($d in $dns) {
+    if ($knownIspDns.ContainsKey($d)) {
+        $hint = $knownIspDns[$d]
+        $full += "DNS hint: $d -> $hint"
+        if (-not $ispName.Contains($hint.Split(' ')[0])) {
+            $wa += "- DNS hint: $hint"
+        }
+        break
+    }
+}
+$full += ''
+$wa += ''
+
+Write-Host '  [7/12] DNS resolution...'
 foreach ($h in @('apse1.pms.sentec.io', 'apse1.api.pms.sentec.io', 'google.com')) {
     try {
         $r = Resolve-DnsName $h -Type A -DnsOnly -ErrorAction Stop | Select-Object -First 1
@@ -156,8 +247,9 @@ foreach ($h in @('apse1.pms.sentec.io', 'apse1.api.pms.sentec.io', 'google.com')
 }
 $full += ''
 
-Write-Host '  [7/11] Ping tests...'
+Write-Host '  [8/12] Ping tests...'
 $wa += "*PING*"
+$sentecPingAvg = 0
 foreach ($h in @('google.com', 'cloudflare.com', 'apse1.pms.sentec.io', 'apse1.api.pms.sentec.io')) {
     Write-Host "    Pinging $h..."
     $p = Test-Connection -ComputerName $h -Count 5 -ErrorAction SilentlyContinue
@@ -167,6 +259,7 @@ foreach ($h in @('google.com', 'cloudflare.com', 'apse1.pms.sentec.io', 'apse1.a
         $mx = ($p | Measure-Object -Property Latency -Maximum).Maximum
         $full += "$h avg=${avg}ms min=${mn}ms max=${mx}ms loss=0/5"
         $wa += "- ${h}: ${avg}ms [OK]"
+        if ($h -eq 'apse1.pms.sentec.io') { $sentecPingAvg = $avg }
     } else {
         $full += "$h FAILED (100% loss)"
         $wa += "- ${h}: FAILED [X]"
@@ -175,11 +268,11 @@ foreach ($h in @('google.com', 'cloudflare.com', 'apse1.pms.sentec.io', 'apse1.a
 $full += ''
 $wa += ''
 
-Write-Host '  [8/11] AWS Region Latency (cloudping-style)...'
+Write-Host '  [9/12] AWS Region Latency (cloudping-style)...'
 $full += '--- AWS REGION LATENCY (TCP 443 to DynamoDB endpoints) ---'
 $wa += "*AWS LATENCY*"
+$awsSe1Avg = 0
 
-# Regions to test: Sentec region + nearby comparisons
 $awsRegions = [ordered]@{
     'ap-southeast-1' = 'Singapore [SENTEC]'
     'ap-southeast-2' = 'Sydney'
@@ -207,6 +300,7 @@ foreach ($region in $awsRegions.GetEnumerator()) {
                  else { '[!]' }
         if ($region.Key -eq 'ap-southeast-1') {
             $wa += "- *$($region.Key)*: $($result.Avg)ms $waTag << SENTEC"
+            $awsSe1Avg = $result.Avg
         } else {
             $wa += "- $($region.Key): $($result.Avg)ms $waTag"
         }
@@ -218,13 +312,58 @@ foreach ($region in $awsRegions.GetEnumerator()) {
 $full += ''
 $wa += ''
 
-Write-Host '  [9/11] Traceroute (up to 60s)...'
+# --- VERDICT ---
+Write-Host '  [9/12] Generating verdict...'
+$wa += "*VERDICT*"
+$full += '--- VERDICT ---'
+if ($awsSe1Avg -gt 0) {
+    if ($awsSe1Avg -lt 50) {
+        $full += "AWS ap-southeast-1: ${awsSe1Avg}ms - GOOD path to Singapore"
+        $wa += "- AWS SG: ${awsSe1Avg}ms [OK]"
+    } elseif ($awsSe1Avg -lt 100) {
+        $full += "AWS ap-southeast-1: ${awsSe1Avg}ms - ACCEPTABLE"
+        $wa += "- AWS SG: ${awsSe1Avg}ms [~]"
+    } elseif ($awsSe1Avg -lt 200) {
+        $full += "AWS ap-southeast-1: ${awsSe1Avg}ms - HIGH LATENCY (ISP routing issue likely)"
+        $wa += "- AWS SG: ${awsSe1Avg}ms [!] ISP routing issue"
+    } else {
+        $full += "AWS ap-southeast-1: ${awsSe1Avg}ms - VERY HIGH (ISP blocking/throttling AWS)"
+        $wa += "- AWS SG: ${awsSe1Avg}ms [!!] ISP problem"
+    }
+
+    if ($sentecPingAvg -gt 0 -and $awsSe1Avg -gt 0) {
+        $delta = $sentecPingAvg - $awsSe1Avg
+        if ($delta -gt 50) {
+            $full += "Sentec overhead: +${delta}ms above raw AWS (app/CDN layer)"
+            $wa += "- Sentec overhead: +${delta}ms"
+        } elseif ($delta -lt -10) {
+            $absDelta = [math]::Abs($delta)
+            $full += "Sentec is ${absDelta}ms faster than raw AWS (CDN/edge caching)"
+            $wa += "- Sentec faster by ${absDelta}ms (CDN)"
+        } else {
+            $full += "Sentec latency matches raw AWS (no extra overhead)"
+            $wa += "- Sentec = AWS (no overhead)"
+        }
+    }
+} else {
+    $full += "Could not reach AWS ap-southeast-1 - possible firewall/ISP block"
+    $wa += "- AWS SG: BLOCKED [!!]"
+}
+
+if ($ispName) {
+    $full += "ISP: $ispName"
+    $wa += "- via: *$ispName*"
+}
+$full += ''
+$wa += ''
+
+Write-Host '  [10/12] Traceroute (up to 60s)...'
 $full += '--- TRACEROUTE to apse1.pms.sentec.io ---'
 $trace = & tracert -d -w 2000 -h 20 apse1.pms.sentec.io 2>$null
 if ($trace) { $full += $trace }
 $full += ''
 
-Write-Host '  [10/11] Browsers...'
+Write-Host '  [11/12] Browsers...'
 $wa += "*BROWSERS*"
 $chromePaths = @(
     "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
@@ -259,7 +398,7 @@ if ($cp) {
 }
 $full += ''
 
-Write-Host '  [11/11] Processes and AV...'
+Write-Host '  [12/12] Processes and AV...'
 $wa += ''
 $wa += "*TOP 5 PROCESSES*"
 $i = 0
