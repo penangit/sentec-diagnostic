@@ -925,19 +925,38 @@ function copyWA() {
 
 function dlFile(ext) {
   var url = 'https://raw.githubusercontent.com/penangit/sentec-diagnostic/main/sentec-diag.' + ext;
-  fetch(url)
-    .then(function(r) { return r.blob(); })
-    .then(function(blob) {
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'sentec-diag.' + ext;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+  var fname = 'sentec-diag.' + ext;
+  var doSave = function(blob) {
+    var a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
       URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
+    }, 250);
+  };
+  fetch(url, { mode: 'cors', cache: 'no-cache' })
+    .then(function(r) {
+      if (!r.ok) throw new Error(r.status);
+      return r.blob();
     })
+    .then(doSave)
     .catch(function() {
-      window.open(url, '_blank');
+      // fallback: XHR blob download
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.responseType = 'blob';
+      xhr.onload = function() {
+        if (xhr.status === 200) doSave(xhr.response);
+        else alert('Download failed — open this link manually:\n' + url);
+      };
+      xhr.onerror = function() {
+        alert('Download failed — open this link manually:\n' + url);
+      };
+      xhr.send();
     });
 }
 
